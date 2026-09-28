@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 2. Dry & Hunger Stones - Interactive Storybook</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Pretendard', 'Malgun Gothic', 'Arial', sans-serif;
+      background-color: #1a252f;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 15px;
+    }
+
+    /* 카드 용기 (반응형 대응) */
+    .card {
+      background-color: #2c3e50;
+      border: 4px solid #3498db;
+      border-radius: 20px;
+      width: 95vw;
+      max-width: 1100px;
+      min-height: 55vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 25px 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      text-align: center;
+      position: relative;
+    }
+
+    /* 모드 표시 배지 */
+    .mode-badge {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      font-size: 14px;
+      font-weight: bold;
+      padding: 5px 12px;
+      border-radius: 15px;
+      background-color: #e74c3c;
+      color: white;
+    }
+
+    .mode-badge.teacher {
+      background-color: #2ecc71;
+    }
+
+    .page-num {
+      font-size: 20px;
+      color: #f1c40f;
+      margin-bottom: 15px;
+      font-weight: bold;
+    }
+
+    .story-text {
+      font-size: 30px;
+      font-weight: bold;
+      line-height: 1.45;
+      color: #ffffff;
+      word-break: keep-all;
+      margin-bottom: 25px;
+      min-height: 70px;
+      outline: none;
+      width: 100%;
+    }
+
+    /* 한글 해석 영역 */
+    .korean-text {
+      font-size: 22px;
+      color: #2ecc71;
+      font-weight: 500;
+      line-height: 1.45;
+      word-break: keep-all;
+      background-color: rgba(0, 0, 0, 0.3);
+      padding: 12px 20px;
+      border-radius: 10px;
+      border-left: 5px solid #2ecc71;
+      outline: none;
+      transition: all 0.3s ease;
+      width: 100%;
+    }
+
+    .korean-text.hidden {
+      display: none;
+    }
+
+    /* 편집 모드 스타일 */
+    .editing {
+      border: 2px dashed #f1c40f !important;
+      background-color: rgba(241, 196, 15, 0.15) !important;
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    /* 컨트롤 버튼 영역 */
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      align-items: center;
+      max-width: 1100px;
+    }
+
+    button {
+      font-size: 16px;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+
+    .btn-home { background-color: #9b59b6; color: white; }
+    .btn-home:hover { background-color: #8e44ad; }
+    .btn-end { background-color: #34495e; color: white; }
+    .btn-end:hover { background-color: #2c3e50; }
+    .btn-nav { background-color: #e67e22; color: white; }
+    .btn-nav:hover { background-color: #d35400; }
+    .btn-audio { background-color: #2ecc71; color: white; font-size: 18px; padding: 10px 20px; }
+    .btn-audio:hover { background-color: #27ae60; }
+    .btn-toggle { background-color: #16a085; color: white; }
+    .btn-toggle:hover { background-color: #117864; }
+    .btn-teacher { background-color: #8e44ad; color: white; }
+    .btn-teacher:hover { background-color: #732d91; }
+    .btn-edit { background-color: #e74c3c; color: white; display: none; } /* 기본 숨김 */
+    .btn-edit:hover { background-color: #c0392b; }
+    
+    .shortcut-info {
+      margin-top: 15px;
+      color: #bdc3c7;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    /* 모바일 화면 최적화 */
+    @media (max-width: 768px) {
+      .card { padding: 20px 15px; min-height: 50vh; }
+      .story-text { font-size: 22px; }
+      .korean-text { font-size: 17px; }
+      button { font-size: 14px; padding: 8px 12px; }
+      .btn-audio { font-size: 15px; padding: 8px 14px; }
+      .mode-badge { top: 10px; right: 10px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="mode-badge" id="modeBadge">👨‍🎓 학생 모드</div>
+    <div class="page-num" id="pageIndicator">Page 1 / 80</div>
+    <div class="story-text" id="textDisplay">Loading...</div>
+    <div class="korean-text" id="korDisplay">해석 불러오는 중...</div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-home" onclick="goHome()">🏠 처음으로</button>
+    <button class="btn-nav" onclick="prevPage()">◀ 이전 (Left)</button>
+    <button class="btn-audio" onclick="speakText()">🔊 음성 듣기 (Space)</button>
+    <button class="btn-nav" onclick="nextPage()">다음 (Right) ▶</button>
+    <button class="btn-toggle" onclick="toggleKorean()">👁️ 해석 감추기/보이기 (H)</button>
+    <button class="btn-teacher" id="authBtn" onclick="toggleTeacherMode()">🔓 교사 모드 전환</button>
+    <button class="btn-edit" id="editBtn" onclick="toggleEdit()">✏️ 텍스트 편집하기</button>
+    <button class="btn-end" onclick="goEnd()">🏁 끝으로</button>
+  </div>
+
+  <div class="shortcut-info">
+    💡 단축키: [←] 이전 | [→] 다음 | [Spacebar] 음성 재생 | [H] 해석 토글
+  </div>
+
+  <script>
+    // 교사 인증 비밀번호 설정 (기본값: 5789)
+    const TEACHER_PASSWORD = "5789";
+    let isTeacherMode = false;
+
+    // Dry 원문 + Hunger Stones 전체 데이터 (생략 없음)
+    const storyData = [
+      // SECTION 1: Reading Text - Lesson 2: Dry
+      { en: "[Reading Text - Lesson 2: Dry]", ko: "[본문 읽기 - 2과: 드라이(Dry)]" },
+      { en: "The kitchen tap makes strange sounds.", ko: "주방 수도꼭지에서 이상한 소리가 난다." },
+      { en: "It coughs.", ko: "콜록거리는 소리를 낸다." },
+      { en: "It spits once, and then goes silent.", ko: "침을 뱉듯 물을 한 번 퉤 뱉더니 잠잠해진다." },
+      { en: "\"Mom,\" I shout out into the living room, \"water is not coming out.\"", ko: "\"엄마,\" 내가 거실을 향해 소리친다, \"물이 안 나와요.\"" },
+      { en: "\"Alyssa, shush!\" Mom says.", ko: "\"앨리사, 웻!\" 엄마가 말씀하신다." },
+      { en: "She is watching the TV, where a news anchor is talking about the \"flow crisis.\"", ko: "엄마는 TV를 보고 계시는데, 뉴스의 앵커가 '단수 위기'에 대해 이야기하고 있다." },
+      { en: "This is what the media has been calling the drought ever since people got tired of hearing the word \"drought.\"", ko: "이것은 사람들이 '가뭄'이라는 단어를 듣는 데 지친 이래로 대중매체가 가뭄을 불러온 이름이다." },
+      { en: "Now the crisis is entering a new stage.", ko: "이제 위기는 새로운 단계로 접어들고 있다." },
+      { en: "We have no running water out of the tap.", ko: "수도꼭지에서 수돗물이 나오지 않는다." },
+      { en: "\"To the mall!\" says Uncle Basil.", ko: "\"쇼핑몰로 가자!\" 바질 삼촌이 말씀하신다." },
+      { en: "My little brother Garrett and I jump in Uncle's truck.", ko: "남동생 개릿과 나는 삼촌의 트럭에 뛰어든다." },
+      { en: "As we pull into the parking lot, we can see the crowd.", ko: "주차장에 진입하자 군중이 보인다." },
+      { en: "\"You two go in. I'll meet you inside,\" Uncle Basil says.", ko: "\"너희 둘 먼저 들어가 있어. 안에서 만나자,\" 삼촌이 말씀하신다." },
+      { en: "Inside it's like Black Friday at its worst but today it's not televisions and video games people are after.", ko: "안은 최악의 블랙 프라이데이 같지만, 오늘 사람들이 쫓는 것은 텔레비전이나 비디오 게임이 아니다." },
+      { en: "What I see in the carts in the checkout line are mostly water bottles.", ko: "계산대 줄에 선 카트들에서 보이는 것은 대부분 생수병이다." },
+      { en: "The essentials of life.", ko: "삶의 필수품." },
+      { en: "There is a look of impatience on the faces of the people in line.", ko: "줄 서 있는 사람들의 얼굴에는 초조함이 서려 있다." },
+      { en: "There is even hostility, hidden by a thin layer of politeness.", ko: "얇은 예의의 겹 뒤에 숨겨진 적대감마저 감돈다." },
+      { en: "Even that politeness is stretched thin.", ko: "그나마 있는 예의조차 아슬아슬하게 얇아져 있다." },
+      { en: "As I approach the back of the store for water bottles, I realize I am too late.", ko: "생수병을 찾아 매장 뒤쪽으로 다가가며, 나는 내가 너무 늦었다는 것을 깨닫는다." },
+      { en: "The shelves are already empty.", ko: "선반은 이미 비어 있다." },
+      { en: "I manage my way to the side aisle, trying my luck.", ko: "운을 시험해 보기 위해 겨우 측면 통로로 발길을 돌린다." },
+      { en: "Sometimes people place unwanted items in the wrong shelves.", ko: "때때로 사람들은 원치 않는 물건을 엉뚱한 선반에 놔두곤 한다." },
+      { en: "Lucky! I find a single case of water that someone abandoned there maybe yesterday, when it wasn't such a precious commodity.", ko: "행운이다! 아직 그렇게 귀중한 상품이 아니었던 어제쯤 누군가가 거기에 버려두었을 생수 한 묶음을 발견한다." },
+      { en: "I reach for it, only to find it pulled away at the last second by a woman.", ko: "손을 뻗었지만, 마지막 순간에 한 여성이 그것을 낚아채 간다." },
+      { en: "She stacks it on top of her cart like a crown on top of her canned goods.", ko: "그녀는 통조림 식품들 위에 왕관처럼 그것을 얹어놓는다." },
+      { en: "\"I'm sorry, but we were here first,\" she says.", ko: "\"미안하지만, 우리가 먼저 왔어요,\" 그녀가 말한다." },
+      { en: "And then her daughter steps forward—a girl I recognize from soccer, Hali Hartling.", ko: "그리고 그녀의 딸이 앞으로 걸어 나오는데, 축구팀에서 알던 할리 하틀링이라는 아이다." },
+      { en: "As her mother pulls their cart away, Hali leans closer to me. \"I'm sorry about that, Alyssa.\"", ko: "엄마가 카트를 끌고 가자, 할리가 내게 다가와 나지막이 말한다. \"그렇게 돼서 미안해, 앨리사.\"" },
+      { en: "\"Didn't I share my water with you at the practice last week?\" I point out to her.", ko: "\"지난주 연습 때 내가 너한테 물 나눠주지 않았어?\" 내가 지적한다." },
+      { en: "\"Maybe you could return the favor and share a few bottles with me.\"", ko: "\"그 호의를 갚는 셈 치고 몇 병만 나눠줄 수 있잖아.\"" },
+      { en: "She looks back to her mother, who's already moving down the aisle, then turns back to me shaking her head.", ko: "그녀는 이미 통로를 따라 이동 중인 엄마를 뒤돌아보고는, 고개를 저으며 나를 다시 바라본다." },
+      { en: "And then she gets a little bit red in the face, and turns to leave before it becomes a deep flush.", ko: "그리고 얼굴이 약간 붉어지더니, 더 새빨개지기 전에 돌아서서 가버린다." },
+      { en: "I look for Garrett, whom I find in the frozen aisle.", ko: "나는 개릿을 찾고, 냉동 코너에서 그를 발견한다." },
+      { en: "Then I see something.", ko: "그때 뭔가가 눈에 들어온다." },
+      { en: "Just past the frozen vegetables and ice cream, there is a case packed with ice.", ko: "냉동 야채와 아이스크림을 막 지나서 얼음으로 가득 찬 케이스가 있다." },
+      { en: "I open the door and reach for a bag.", ko: "나는 문을 열고 한 포대를 향해 손을 뻗는다." },
+      { en: "\"What are you doing? We need water, not ice,\" he reminds me.", ko: "\"뭐 하는 거야? 우린 얼음이 아니라 물이 필요하다고,\" 그가 상기시킨다." },
+      { en: "\"Ice is water. Just help me,\" I tell him.", ko: "\"얼음이 물이야. 그냥 좀 도와줘,\" 내가 그에게 말한다." },
+      { en: "Garrett and I put one bag of ice after another into our cart, until it is piled as high as it can get.", ko: "개릿과 나는 얼음 포대를 하나씩 하나씩 카트에 실어, 쌓을 수 있는 가장 높이까지 쌓는다." },
+      { en: "By now other people have taken notice and begin to empty the ice case.", ko: "이제 다른 사람들도 눈치를 채고 얼음 케이스를 비우기 시작한다." },
+      { en: "The cart is ridiculously heavy now, and almost impossible to push.", ko: "카트는 이제 터무니없이 무거워져서 거의 밀 수 없을 정도다." },
+      { en: "Then, a man in a business suit comes up behind us. He smiles.", ko: "그때, 정장을 입은 한 남자가 우리 뒤로 다가온다. 그가 미소를 짓는다." },
+      { en: "\"Looks like you could use some help.\"", ko: "\"도움이 좀 필요한 것 같아 보이는군요.\"" },
+      { en: "He doesn't wait for us to answer before grabbing the cart's handle.", ko: "그는 우리가 대답하기도 전에 카트 손잡이를 잡는다." },
+      { en: "\"Thank you for helping us,\" I tell him.", ko: "\"도와주셔서 감사합니다,\" 내가 그에게 말한다." },
+      { en: "\"Not a problem. We all need to help one another.\"", ko: "\"별말씀을요. 우리는 서로 도와야죠.\"" },
+      { en: "He smiles again, and I return the smile.", ko: "그가 다시 미소 짓고, 나도 미소로 답한다." },
+      { en: "It is good to know that difficult times can bring out the best in people.", ko: "어려운 시기가 사람들의 가장 좋은 면을 끌어낼 수 있다는 사실을 알게 되어 다행이다." },
+      { en: "I decide that one favor deserves another.", ko: "나는 하나의 호의는 또 다른 호의로 보답받아야 마땅하다고 생각한다." },
+      { en: "\"Why don't you take a bag of ice for yourself,\" I suggest.", ko: "\"얼음 한 포대 가지시는 게 어때요?\" 하고 내가 제안한다." },
+      { en: "His smile does not fade. \"I have a better idea,\" he says.", ko: "그의 미소는 사라지지 않는다. \"나한테 더 좋은 생각이 있어요,\" 하고 그가 말한다." },
+      { en: "\"Why don't you take a bag of ice for yourselves, and I'll keep the rest.\"", ko: "\"너희가 얼음 한 포대를 가져가고, 나머지는 내가 가질게.\"" },
+      { en: "For a moment I think he is joking, but then realize he is serious.", ko: "잠시 동안 그가 농담하는 줄 알았지만, 그가 진심이라는 것을 이내 깨닫는다." },
+      { en: "\"Excuse me?\"", ko: "\"네?\"" },
+      { en: "He is still smiling, but his eyes scare me.", ko: "그는 여전히 미소 짓고 있지만, 그의 눈빛은 나를 겁먹게 한다." },
+      { en: "As long as his hands are firmly locked on the handle of our cart, there is nothing to prove that it's ours and not his.", ko: "그의 두 손이 우리 카트 손잡이에 꽉 들러붙어 있는 한, 그것이 그의 것이 아니라 우리 것임을 증명할 길은 없다." },
+      { en: "\"Is there a problem here?\"", ko: "\"무슨 문제 있나요?\"" },
+      { en: "It is Uncle Basil. He has arrived just in time.", ko: "바질 삼촌이다. 제때 맞춰 도착하셨다." },
+      { en: "\"Not at all.\"", ko: "\"전혀 아닙니다.\"" },
+      { en: "The man looks at the ice with a bitter face, then leaves.", ko: "남자는 씁쓸한 표정으로 얼음을 바라보더니 이내 자리를 뜬다." },
+      { 
+        en: "*The above is a shortened version of the opening of the novel Dry (2018). It tells the story of a girl who has to make tough choices for her family during a disastrous California drought. Her unwanted adventure ends when the water supply resumes and life is back to normal. Provided that the factors contributing to water shortages worldwide are not addressed, including climate change, population growth, and using too much water for agriculture, it is possible that this story can become a reality.", 
+        ko: "*위 글은 소설 Dry (2018)의 도입부를 요약한 내용입니다. 재앙적인 캘리포니아 가뭄 동안 가족을 위해 힘든 선택을 해야 하는 한 소녀의 이야기를 담고 있습니다. 원치 않던 그녀의 모험은 용수가 다시 공급되고 일상이 정상으로 돌아오면서 끝이 납니다. 기후 변화, 인구 증가, 농업용수의 과다 사용을 포함하여 전 세계적인 물 부족 현상을 일으키는 요인들이 해결되지 않는다면, 이 이야기는 현실이 될 수도 있습니다." 
+      },
+
+      // SECTION 2: Further Reading Text - Lesson 2: Hunger Stones
+      { en: "[Further Reading Text - Lesson 2: Hunger Stones]", ko: "[심화 읽기 - 2과: 배고픔의 돌 (Hunger Stones)]" },
+      { en: "In the summer of 2022, during the worst drought in 500 years in Europe, a stone known as a \"hunger stone\" was found in a Czech town along the Elbe River.", ko: "2022년 여름, 유럽에서 500년 만의 최악의 가뭄이 계속되는 동안, 엘베강을 끼고 있는 체코의 한 마을에서 '배고픔의 돌(Hunger Stone)'로 알려진 돌 하나가 발견되었다." },
+      { en: "The stone had a sentence written on it that read: \"If you see me, then cry.\"", ko: "그 돌에는 \"나를 본다면, 울어라\"라고 쓰인 문장이 기각되어 있었다." },
+      { en: "The hunger stones, found in rivers across central Europe, typically remain underwater.", ko: "중앙유럽 전역의 강에서 발견되는 배고픔의 돌들은 보통 물속에 잠겨 있다." },
+      { en: "However, when droughts occur and water levels retreat, these stones become visible.", ko: "그러나 가뭄이 발생하고 수위가 낮아지면, 이 돌들이 모습을 드러낸다." },
+      { en: "The stones are significant because they bear records of the past severe droughts.", ko: "이 돌들은 과거의 심각했던 가뭄에 대한 기록을 품고 있기 때문에 중요한 의미를 갖는다." },
+      { en: "Droughts cause reduced harvests, food shortages, and hunger, especially for the poor.", ko: "가뭄은 수확량 감소, 식량 부족, 그리고 특히 가난한 이들에게 굶주림을 초래한다." },
+      { en: "The words on the hunger stones are believed to warn of these hardships and to urge people to be prepared.", ko: "배고픔의 돌에 새겨진 문구는 이러한 시련들을 경고하고 사람들에게 대비하도록 촉구하는 것으로 여겨진다." },
+      { en: "Considering the continuation of climate change, experts warn that the situation we face is not just a simple, occasional drought but a severe drought that could persist for decades.", ko: "기후 변화의 지속을 고려할 때, 전문가들은 우리가 직면한 상황이 단순하고 일시적인 가뭄이 아니라 수십 년간 지속될 수 있는 심각한 대가뭄이라고 경고한다." },
+      { en: "The United Nations has predicted that by 2050, 75 percent of the global population could suffer from the effects of drought unless significant action is taken to address climate change.", ko: "국제연합(UN)은 기후 변화에 대응하기 위한 중대한 조치가 취해지지 않는다면, 2050년까지 세계 인구의 75%가 가뭄의 영향으로 고통받을 수 있다고 예측했다." }
+    ];
+
+    let currentIndex = 0;
+    let isEditing = false;
+
+    function updatePage() {
+      const currentItem = storyData[currentIndex];
+      document.getElementById('textDisplay').innerText = currentItem.en;
+      document.getElementById('korDisplay').innerText = currentItem.ko;
+      document.getElementById('pageIndicator').innerText = `Page ${currentIndex + 1} / ${storyData.length}`;
+    }
+
+    // 교사 모드 전환 및 비밀번호 인증
+    function toggleTeacherMode() {
+      if (!isTeacherMode) {
+        const passwordInput = prompt("교사 인증 비밀번호를 입력하세요:");
+        if (passwordInput === TEACHER_PASSWORD) {
+          isTeacherMode = true;
+          document.getElementById('modeBadge').innerText = "👩‍🏫 교사 모드";
+          document.getElementById('modeBadge').classList.add('teacher');
+          document.getElementById('authBtn').innerText = "🔒 학생 모드로 전환";
+          document.getElementById('editBtn').style.display = "inline-block";
+          alert("교사 모드로 전환되었습니다. 텍스트 편집이 가능합니다.");
+        } else if (passwordInput !== null) {
+          alert("비밀번호가 올바르지 않습니다.");
+        }
+      } else {
+        if (isEditing) disableEditing();
+        isTeacherMode = false;
+        document.getElementById('modeBadge').innerText = "👨‍🎓 학생 모드";
+        document.getElementById('modeBadge').classList.remove('teacher');
+        document.getElementById('authBtn').innerText = "🔓 교사 모드 전환";
+        document.getElementById('editBtn').style.display = "none";
+        alert("학생 모드로 전환되었습니다.");
+      }
+    }
+
+    // TTS 음성 재생 기능
+    function speakText() {
+      window.speechSynthesis.cancel();
+      const text = document.getElementById('textDisplay').innerText;
+      const cleanText = text.replace(/\[.*?\]/g, '').replace(/[\*"]/g, '');
+      if (!cleanText.trim()) return;
+
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.85;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function nextPage() {
+      if (isEditing) disableEditing();
+      if (currentIndex < storyData.length - 1) {
+        currentIndex++;
+        updatePage();
+      }
+    }
+
+    function prevPage() {
+      if (isEditing) disableEditing();
+      if (currentIndex > 0) {
+        currentIndex--;
+        updatePage();
+      }
+    }
+
+    function goHome() {
+      if (isEditing) disableEditing();
+      currentIndex = 0;
+      updatePage();
+    }
+
+    function goEnd() {
+      if (isEditing) disableEditing();
+      currentIndex = storyData.length - 1;
+      updatePage();
+    }
+
+    function toggleKorean() {
+      const korElement = document.getElementById('korDisplay');
+      korElement.classList.toggle('hidden');
+    }
+
+    // 텍스트 편집기 기능 (교사 전용)
+    function toggleEdit() {
+      if (!isTeacherMode) return;
+      if (!isEditing) {
+        enableEditing();
+      } else {
+        disableEditing();
+      }
+    }
+
+    function enableEditing() {
+      isEditing = true;
+      const enElem = document.getElementById('textDisplay');
+      const korElem = document.getElementById('korDisplay');
+      
+      enElem.contentEditable = "true";
+      korElem.contentEditable = "true";
+      
+      enElem.classList.add('editing');
+      korElem.classList.add('editing');
+      
+      document.getElementById('editBtn').innerText = "💾 편집 완료";
+      document.getElementById('editBtn').style.backgroundColor = "#27ae60";
+    }
+
+    function disableEditing() {
+      isEditing = false;
+      const enElem = document.getElementById('textDisplay');
+      const korElem = document.getElementById('korDisplay');
+      
+      enElem.contentEditable = "false";
+      korElem.contentEditable = "false";
+      
+      enElem.classList.remove('editing');
+      korElem.classList.remove('editing');
+      
+      storyData[currentIndex].en = enElem.innerText;
+      storyData[currentIndex].ko = korElem.innerText;
+      
+      document.getElementById('editBtn').innerText = "✏️ 텍스트 편집하기";
+      document.getElementById('editBtn').style.backgroundColor = "#e74c3c";
+    }
+
+    // 단축키 지원
+    document.addEventListener('keydown', function(event) {
+      if (isEditing) return;
+
+      if (event.key === 'ArrowRight') {
+        nextPage();
+      } else if (event.key === 'ArrowLeft') {
+        prevPage();
+      } else if (event.code === 'Space') {
+        event.preventDefault();
+        speakText();
+      } else if (event.key === 'h' || event.key === 'H' || event.key === 'ㅗ') {
+        toggleKorean();
+      }
+    });
+
+    // 초기 실행
+    updatePage();
+  </script>
+
+</body>
+</html>
